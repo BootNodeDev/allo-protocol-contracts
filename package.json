@@ -44,7 +44,11 @@
     "deploy-merkle-implementation": "pnpm hardhat run scripts/payoutStrategy/merkle/deployMerklePayoutStrategyImplementation.ts --network",
     "link-merkle-implementation": "pnpm hardhat run scripts/payoutStrategy/merkle/linkMerklePayoutStrategyImplementation.ts --network",
     "create-merkle-contract": "pnpm hardhat run scripts/payoutStrategy/merkle/createMerklePayoutStrategy.ts --network",
-    "upgrade-merkle-factory": "pnpm hardhat run scripts/payoutStrategy/merkle/upgradeMerkleFactory.ts --network"
+    "upgrade-merkle-factory": "pnpm hardhat run scripts/payoutStrategy/merkle/upgradeMerkleFactory.ts --network",
+    "// direct-strategy-deploy-scripts": "echo '//-- Round deploy Script --//'",
+    "deploy-direct-strategy": "pnpm hardhat run scripts/strategies/deployDirectStrategy.ts --network",
+    "// registry-deploy-scripts": "echo '//-- Round deploy Script --//'",
+    "deploy-registry": "pnpm hardhat run scripts/registry/deployRegistry.ts --network"
   },
   "devDependencies": {
     "@ethersproject/constants": "^5.7.0",
