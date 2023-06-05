@@ -5,7 +5,7 @@ type RegistryParams = {
 
 type DeployParams = Record<string, RegistryParams>;
 
-export const projectRegistryParams: DeployParams = {
+export const registryParams: DeployParams = {
   "mainnet": {
     proxyContactAddress: '',
   },

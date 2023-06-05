@@ -6,7 +6,7 @@ type StrategyParams = {
 
 type DeployParams = Record<string, StrategyParams>;
 
-export const roundParams: DeployParams = {
+export const strategiesParams: DeployParams = {
   "mainnet": {
     merklePayoutStrategy: '',
     directStrategy: '',

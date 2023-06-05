@@ -50,7 +50,12 @@
     "// merkle-payout-strategy-deploy-scripts": "echo '//-- Round deploy Script --//'",
     "deploy-merkle-strategy": "pnpm hardhat run scripts/strategies/deployMerklePayoutStrategy.ts --network",
     "// registry-deploy-scripts": "echo '//-- Round deploy Script --//'",
-    "deploy-registry": "pnpm hardhat run scripts/registry/deployRegistry.ts --network"
+    "deploy-registry": "pnpm hardhat run scripts/registry/deployRegistry.ts --network",
+    "set-trusted_registry": "pnpm hardhat run scripts/registry/setTrustedRegistry.ts --network",
+    "// util-scripts": "echo '//-- Util scripts --//'",
+    "create-project": "pnpm hardhat run scripts/registry/createProject.ts --network",
+    "create-program": "pnpm hardhat run scripts/registry/createProgram.ts --network",
+    "create-direct-round": "pnpm hardhat run scripts/registry/createDirectRound.ts --network"
   },
   "devDependencies": {
     "@ethersproject/constants": "^5.7.0",
