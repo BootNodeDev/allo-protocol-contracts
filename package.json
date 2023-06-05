@@ -47,6 +47,8 @@
     "upgrade-merkle-factory": "pnpm hardhat run scripts/payoutStrategy/merkle/upgradeMerkleFactory.ts --network",
     "// direct-strategy-deploy-scripts": "echo '//-- Round deploy Script --//'",
     "deploy-direct-strategy": "pnpm hardhat run scripts/strategies/deployDirectStrategy.ts --network",
+    "// merkle-payout-strategy-deploy-scripts": "echo '//-- Round deploy Script --//'",
+    "deploy-merkle-strategy": "pnpm hardhat run scripts/strategies/deployMerklePayoutStrategy.ts --network",
     "// registry-deploy-scripts": "echo '//-- Round deploy Script --//'",
     "deploy-registry": "pnpm hardhat run scripts/registry/deployRegistry.ts --network"
   },

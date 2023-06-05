@@ -1,16 +1,16 @@
 // Update this file any time a new project registry contract has been deployed / upgraded
-type ProjectRegistryParams = {
+type RegistryParams = {
   proxyContactAddress: string;
 };
 
-type DeployParams = Record<string, ProjectRegistryParams>;
+type DeployParams = Record<string, RegistryParams>;
 
 export const projectRegistryParams: DeployParams = {
   "mainnet": {
     proxyContactAddress: '',
   },
   "goerli": {
-    proxyContactAddress: '0xa71864fAd36439C50924359ECfF23Bb185FFDf21',
+    proxyContactAddress: '0x9Cd9211c719693610F2cF715F03a4cc3EAe96132',
   },
   "optimism-mainnet": {
     proxyContactAddress: '',
