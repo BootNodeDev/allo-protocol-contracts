@@ -86,7 +86,7 @@ Create a new round for a project
 | projectID | bytes32 | ID of project creating the round |
 | strategyImplementation | address | undefined |
 | encodedRoundParameters | bytes | Encoded parameters for round creation |
-| encodedStrategyParameters | bytes | undefined |
+| encodedStrategyParameters | bytes | Encoded parameters for strategy creation |
 
 #### Returns
 
