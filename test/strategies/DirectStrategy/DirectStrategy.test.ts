@@ -16,7 +16,7 @@ import {
   MockERC20
 } from "../../../typechain";
 
-describe.only("DirectStrategy", () => {
+describe("DirectStrategy", () => {
   let snapshot: number;
   let admin: SignerWithAddress;
   let notRoundOperator: SignerWithAddress;

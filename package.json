@@ -55,7 +55,8 @@
     "// util-scripts": "echo '//-- Util scripts --//'",
     "create-project": "pnpm hardhat run scripts/registry/createProject.ts --network",
     "create-program": "pnpm hardhat run scripts/registry/createProgram.ts --network",
-    "create-direct-round": "pnpm hardhat run scripts/registry/createDirectRound.ts --network"
+    "create-direct-round": "pnpm hardhat run scripts/registry/createDirectRound.ts --network",
+    "create-qf-round": "pnpm hardhat run scripts/registry/createQFRound.ts --network"
   },
   "devDependencies": {
     "@ethersproject/constants": "^5.7.0",

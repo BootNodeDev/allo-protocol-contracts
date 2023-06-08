@@ -454,7 +454,7 @@ Emitted when a Round implementation contract is updated
 ### StrategyContractCreated
 
 ```solidity
-event StrategyContractCreated(address indexed strategyAddress, address indexed strategyImplementation)
+event StrategyContractCreated(address indexed roundAddress, address indexed strategyAddress, address indexed strategyImplementation)
 ```
 
 Emitted when a new Voting is created
@@ -465,6 +465,7 @@ Emitted when a new Voting is created
 
 | Name | Type | Description |
 |---|---|---|
+| roundAddress `indexed` | address | undefined |
 | strategyAddress `indexed` | address | undefined |
 | strategyImplementation `indexed` | address | undefined |
 

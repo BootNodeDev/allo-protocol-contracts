@@ -5,8 +5,6 @@ import "@openzeppelin/contracts-upgradeable/proxy/ClonesUpgradeable.sol";
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "../strategies/BaseStrategy.sol";
 
-import {console} from "hardhat/console.sol";
-
 contract MockRoundImplementation is AccessControlEnumerable {
 
   uint256 public nonce;

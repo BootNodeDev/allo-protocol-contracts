@@ -16,7 +16,7 @@ export const roundParams: DeployParams = {
     roundContract: '',
   },
   "goerli": {
-    roundFactoryContract: '0xf1a07dF4E4dD63Ba9b6D1B20b5Bb3cbdEB7E004d',
+    roundFactoryContract: '0x7aeb4408B198F8fbEb87007B82d863416dF3C8Af',
     roundImplementationContract: '0x37E0B50DccdCDE1bD280fd5394983744c9283a77',
     roundContract: '0xF7b7d21257DEaC12F75D901309026913429C9bdF',
   },

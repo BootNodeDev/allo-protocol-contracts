@@ -54,6 +54,7 @@ contract RoundFactory is IRoundFactory, AccessControlEnumerableUpgradeable {
 
     /// @notice Emitted when a new Voting is created
     event StrategyContractCreated(
+        address indexed roundAddress,
         address indexed strategyAddress,
         address indexed strategyImplementation
     );
@@ -132,7 +133,7 @@ contract RoundFactory is IRoundFactory, AccessControlEnumerableUpgradeable {
 
         address strategyClone = _createClone(strategyImplementation);
 
-        emit StrategyContractCreated(strategyClone, strategyImplementation);
+        emit StrategyContractCreated(roundClone, strategyClone, strategyImplementation);
 
         IRoundImplementation(payable(roundClone)).initialize(
             encodedRoundParameters,
