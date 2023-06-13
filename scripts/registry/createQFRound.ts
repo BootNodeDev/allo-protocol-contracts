@@ -54,7 +54,7 @@ export async function main() {
   const encodedRoundParameters = await generateAndEncodeParams()
   const encodedStrategyParameters = await encodeStrategyParameters([
     '0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4',
-    '1000000000000'
+    100000000000
   ])
 
   const roundTx = await registryContract.createRound(

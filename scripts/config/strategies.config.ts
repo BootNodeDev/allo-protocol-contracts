@@ -12,8 +12,8 @@ export const strategiesParams: DeployParams = {
     directStrategy: '',
   },
   "goerli": {
-    merklePayoutStrategy: '0x631De84A116314eCD6F5a87ff3893fced7E5f33F',
-    directStrategy: '0xD8d9c9090A5651c361fd19C5669ba9AA48a8cFcD',
+    merklePayoutStrategy: '0xD8d9c9090A5651c361fd19C5669ba9AA48a8cFcD',
+    directStrategy: '0x631De84A116314eCD6F5a87ff3893fced7E5f33F',
   },
   "optimism-mainnet": {
     merklePayoutStrategy: '',
