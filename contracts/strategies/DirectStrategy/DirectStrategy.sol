@@ -143,22 +143,27 @@ contract DirectStrategy is BaseStrategy, ReentrancyGuardUpgradeable {
     emit RoundFeeAddressUpdated(roundFeeAddress);
   }
 
-
-  /**
-   * @notice Invoked by RoundImplementation which allows directly allocate funds for a project application
-   *
-   * @dev
-   * - TODO
-   * - can be invoked by the round
-   * - supports ERC20 and Native token transfer
-   *
-   * @param encodedAllocations encoded list of votes
-   * @param allocatorAddress voter address
-   */
   function vote(bytes[] calldata encodedAllocations, address allocatorAddress) external override payable {
     revert DirectStrategy__vote_NotImplemented();
   }
 
+  /**
+   * @notice Invoked by a round operator to make direct payments of funds to a project application.
+   *
+   * @dev It can be used to pay from a given address using `ERC20.transferFrom`, or from
+   * the configured vault in which case this contract should be set as a Safe Module on the Safe Multisig vault.
+   * Using `transferFrom` only allow to pay with ERC20 tokens, and requires the indicated vault previously approved this
+   * contract to use such ERC20 token on it behalf.
+   * This 2 options are handled by the `payment.vault` parameter, if it set to an address different from address(0) then
+   * the function will follow the `transferFrom` path.
+   *
+   * To complete the payment it is required for the project application to be on status ACCEPTED.
+   *
+   * - TODO
+   * - use a Safe multisig to pull the funds from (ERC20 and ETH)
+   *
+   * @param payment payment data
+   */
   function payout(Payment calldata payment) external nonReentrant isRoundOperator {
     uint256 currentStatus = RoundImplementation(roundAddress).getApplicationStatus(payment.applicationIndex);
     if (currentStatus != uint256(ApplicationStatus.ACCEPTED)) revert DirectStrategy__payout_ApplicationNotAccepted();
@@ -178,18 +183,6 @@ contract DirectStrategy is BaseStrategy, ReentrancyGuardUpgradeable {
       emit PayoutMade(payment.vault, payment.token, payment.amount, payment.grantAddress, payment.projectId, payment.applicationIndex);
     } else { // use Safe multisig vault
       revert DirectStrategy__payout_NotImplementedYet();
-    }
-  }
-
-  /// @notice Util function to transfer amount to recipient
-  /// @param _recipient recipient address
-  /// @param _amount amount to transfer
-  /// @param _tokenAddress token address
-  function _transferAmount(address payable _recipient, uint256 _amount, address _tokenAddress) private {
-    if (_tokenAddress == address(0)) {
-      AddressUpgradeable.sendValue(_recipient, _amount);
-    } else {
-      IERC20Upgradeable(_tokenAddress).safeTransfer(_recipient, _amount);
     }
   }
 
