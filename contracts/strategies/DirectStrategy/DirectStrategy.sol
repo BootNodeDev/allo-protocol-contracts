@@ -31,6 +31,35 @@ contract DirectStrategy is BaseStrategy, ReentrancyGuardUpgradeable {
     CANCELED
   }
 
+  struct Payment {
+      address vault;
+      address token;
+      uint256 amount;
+      address grantAddress;
+      bytes32 projectId;
+      uint256 applicationIndex;
+  }
+
+  // --- Data ---
+
+  /// @notice Funds vault address
+  address public vaultAddress;
+
+   /// @notice Allo Config Contract Address
+  AlloSettings public alloSettings;
+
+  /// @notice Round fee percentage
+  uint32 public roundFeePercentage;
+
+  /// @notice Round fee address
+  address payable public roundFeeAddress;
+
+  // Errors
+
+  error DirectStrategy__vote_NotImplemented();
+  error DirectStrategy__payout_ApplicationNotAccepted();
+  error DirectStrategy__payout_NativeTokenNotAllowed();
+  error DirectStrategy__payout_NotImplementedYet();
 
   // --- Event ---
 
@@ -39,6 +68,16 @@ contract DirectStrategy is BaseStrategy, ReentrancyGuardUpgradeable {
 
   /// @notice Emitted when a Round wallet address is updated
   event RoundFeeAddressUpdated(address roundFeeAddress);
+
+  /// @notice Emitted when a payout is executed
+  event PayoutMade(
+      address indexed vault,
+      address token,
+      uint256 amount,
+      address grantAddress,
+      bytes32 indexed projectId,
+      uint256 indexed applicationIndex
+  );
 
   // --- Modifier ---
 
@@ -57,20 +96,6 @@ contract DirectStrategy is BaseStrategy, ReentrancyGuardUpgradeable {
     );
     _;
   }
-
-  // --- Data ---
-
-  /// @notice Funds vault address
-  address public vaultAddress;
-
-   /// @notice Allo Config Contract Address
-  AlloSettings public alloSettings;
-
-  /// @notice Round fee percentage
-  uint32 public roundFeePercentage;
-
-  /// @notice Round fee address
-  address payable public roundFeeAddress;
 
   // --- Constructor ---
   constructor() {
@@ -130,64 +155,30 @@ contract DirectStrategy is BaseStrategy, ReentrancyGuardUpgradeable {
    * @param encodedAllocations encoded list of votes
    * @param allocatorAddress voter address
    */
-  function vote(bytes[] calldata encodedAllocations, address allocatorAddress) external override payable nonReentrant isRoundContract isCallerRoundOperator(allocatorAddress) {
-    uint256 msgValue = 0;
+  function vote(bytes[] calldata encodedAllocations, address allocatorAddress) external override payable {
+    revert DirectStrategy__vote_NotImplemented();
+  }
 
-    /// @dev iterate over multiple allocations
-    /// @dev TODO
-    for (uint256 i = 0; i < encodedAllocations.length; i++) {
-      /// @dev decode encoded vote
-      (
-        address _token,
-        uint256 _amount,
-        address _grantAddress,
-        bytes32 _projectId,
-        uint256 _applicationIndex
-      ) = abi.decode(encodedAllocations[i], (
-        address,
-        uint256,
-        address,
-        bytes32,
-        uint256
-      ));
+  function payout(Payment calldata payment) external nonReentrant isRoundOperator {
+    uint256 currentStatus = RoundImplementation(roundAddress).getApplicationStatus(payment.applicationIndex);
+    if (currentStatus != uint256(ApplicationStatus.ACCEPTED)) revert DirectStrategy__payout_ApplicationNotAccepted();
 
-      uint256 currentStatus = RoundImplementation(roundAddress).getApplicationStatus(_applicationIndex);
-      require(currentStatus == uint256(ApplicationStatus.ACCEPTED), "application not accepted");
-
-      // TODO - act as safe module or transferFrom
-
-      // TODO - should we allow to pay in ETH
-      if (_token == address(0)) {
-        // TODO - add logic if needed
-        revert("not implemented");
-        // /// @dev native token transfer to grant address
-        // // slither-disable-next-line reentrancy-events
-        // msgValue += _amount;
-        // AddressUpgradeable.sendValue(payable(_grantAddress), _amount);
-      } else {
-        /// @dev erc20 transfer to grant address
-        // slither-disable-next-line arbitrary-send-erc20,reentrancy-events,
-        SafeERC20Upgradeable.safeTransferFrom(
-          IERC20Upgradeable(_token),
-          vaultAddress,
-          _grantAddress,
-          _amount
-        );
-      }
-
-      /// @dev emit event for transfer
-      emit Voted(
-        _token,
-        _amount,
-        vaultAddress,
-        _grantAddress,
-        _projectId,
-        _applicationIndex,
-        msg.sender
+    // use transfer from
+    if (payment.vault != address(0)) {
+      if (payment.token == address(0)) revert DirectStrategy__payout_NativeTokenNotAllowed();
+      /// @dev erc20 transfer to grant address
+      // slither-disable-next-line arbitrary-send-erc20,reentrancy-events,
+      SafeERC20Upgradeable.safeTransferFrom(
+        IERC20Upgradeable(payment.token),
+        payment.vault,
+        payment.grantAddress,
+        payment.amount
       );
-    }
 
-    require(msgValue == msg.value, "msg.value does not match vote amount");
+      emit PayoutMade(payment.vault, payment.token, payment.amount, payment.grantAddress, payment.projectId, payment.applicationIndex);
+    } else { // use Safe multisig vault
+      revert DirectStrategy__payout_NotImplementedYet();
+    }
   }
 
   /// @notice Util function to transfer amount to recipient

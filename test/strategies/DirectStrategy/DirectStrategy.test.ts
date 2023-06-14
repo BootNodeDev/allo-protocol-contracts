@@ -1,13 +1,9 @@
 import { AddressZero } from "@ethersproject/constants";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
-import { deployContract } from "ethereum-waffle";
-import { Event, Wallet, BigNumber, BigNumberish } from 'ethers';
+import { Wallet, BigNumberish } from 'ethers';
 import { BytesLike, formatBytes32String, isAddress } from "ethers/lib/utils";
-import { artifacts, ethers } from "hardhat";
-import { Artifact } from "hardhat/types";
 import {takeSnapshot, restoreSnapshot, currentTime} from "../../utils/utils";
-import { encodeRoundParameters } from "../../../scripts/utils";
 import { ApplicationStatus } from "../../../utils/applicationStatus";
 import {
   DirectStrategy,
@@ -16,7 +12,16 @@ import {
   MockERC20
 } from "../../../typechain";
 
-describe("DirectStrategy", () => {
+type Payment = {
+  vault: string;
+  token: string;
+  amount: BigNumberish;
+  grantAddress: string;
+  projectId: BytesLike;
+  applicationIndex: BigNumberish;
+}
+
+describe.only("DirectStrategy", () => {
   let snapshot: number;
   let admin: SignerWithAddress;
   let notRoundOperator: SignerWithAddress;
@@ -24,7 +29,7 @@ describe("DirectStrategy", () => {
   let grantee1: SignerWithAddress;
 
   let directStrategyImpl: DirectStrategy;
-  let directAllocationStrategyProxy: DirectStrategy;
+  let directStrategyProxy: DirectStrategy;
   let alloSettingsContract: AlloSettings;
   let mockRound: MockRoundImplementation;
   let mockERC20: MockERC20;
@@ -98,47 +103,47 @@ describe("DirectStrategy", () => {
         if (receipt.events) {
           const event = receipt.events.find(e => e.event === 'NewAllocationStrategy');
           if (event && event.args) {
-            directAllocationStrategyProxy = await ethers.getContractAt("DirectStrategy", event.args.proxyAddress) as DirectStrategy;
+            directStrategyProxy = await ethers.getContractAt("DirectStrategy", event.args.proxyAddress) as DirectStrategy;
           }
         }
       });
 
       it("invoking init once SHOULD set the contract version", async () => {
-        expect(await directAllocationStrategyProxy.VERSION()).to.equal(
+        expect(await directStrategyProxy.VERSION()).to.equal(
           VERSION
         );
       });
 
       it("invoking init once SHOULD set the round address", async () => {
-        expect(await directAllocationStrategyProxy.roundAddress()).to.equal(
+        expect(await directStrategyProxy.roundAddress()).to.equal(
           mockRound.address
         );
       });
 
       it("invoking init once SHOULD set the allo settings", async () => {
-        expect(await directAllocationStrategyProxy.alloSettings()).to.equal(
+        expect(await directStrategyProxy.alloSettings()).to.equal(
           alloSettingsContract.address
         );
       });
       it("invoking init once SHOULD set the vault address", async () => {
-        expect(await directAllocationStrategyProxy.vaultAddress()).to.equal(
+        expect(await directStrategyProxy.vaultAddress()).to.equal(
           vaultAddress
         );
       });
       it("invoking init once SHOULD set the roundFee Percentage", async () => {
-        expect(await directAllocationStrategyProxy.roundFeePercentage()).to.equal(
+        expect(await directStrategyProxy.roundFeePercentage()).to.equal(
           roundFeePercentage
         );
       });
       it("invoking init once SHOULD set the roundFee Address", async () => {
-        expect(await directAllocationStrategyProxy.roundFeeAddress()).to.equal(
+        expect(await directStrategyProxy.roundFeeAddress()).to.equal(
           roundFeeAddress
         );
       });
 
       it("invoking initialize more than once SHOULD revert the transaction ", () => {
         // initialize is called when the clone is created in the factory
-        expect(directAllocationStrategyProxy.connect(notRoundOperator).initialize(strategyEncodedParams)).to.revertedWith(
+        expect(directStrategyProxy.connect(notRoundOperator).initialize(strategyEncodedParams)).to.revertedWith(
           "Initializable: contract is already initialized"
         );
       });
@@ -155,7 +160,7 @@ describe("DirectStrategy", () => {
       it ('SHOULD revert if invoked by wallet who is not round operator', async () => {
         const newRoundFeePercentage = 10 * (denominator / 100);
         await expect(
-          directAllocationStrategyProxy
+          directStrategyProxy
             .connect(notRoundOperator)
             .updateRoundFeePercentage(newRoundFeePercentage)
         ).to.revertedWith(
@@ -171,7 +176,7 @@ describe("DirectStrategy", () => {
         expect(await mockRound.roundEndTime()).to.be.lt(now)
 
         await expect(
-          directAllocationStrategyProxy
+          directStrategyProxy
             .updateRoundFeePercentage(newRoundFeePercentage)
         ).to.revertedWith(
           'round has ended'
@@ -183,13 +188,13 @@ describe("DirectStrategy", () => {
 
         const newRoundFeePercentage = 10 * (denominator / 100);
 
-        const txn = await directAllocationStrategyProxy.updateRoundFeePercentage(
+        const txn = await directStrategyProxy.updateRoundFeePercentage(
           newRoundFeePercentage
         );
         await txn.wait();
 
         const roundFeePercentage =
-          await directAllocationStrategyProxy.roundFeePercentage();
+          await directStrategyProxy.roundFeePercentage();
         expect(roundFeePercentage).equals(newRoundFeePercentage);
       });
 
@@ -197,12 +202,12 @@ describe("DirectStrategy", () => {
 
         const newRoundFeePercentage = 10 * (denominator / 100);
 
-        const txn = await directAllocationStrategyProxy.updateRoundFeePercentage(
+        const txn = await directStrategyProxy.updateRoundFeePercentage(
           newRoundFeePercentage
         );
 
         expect(txn)
-          .to.emit(directAllocationStrategyProxy, "RoundFeePercentageUpdated")
+          .to.emit(directStrategyProxy, "RoundFeePercentageUpdated")
           .withArgs(newRoundFeePercentage);
       });
     });
@@ -212,7 +217,7 @@ describe("DirectStrategy", () => {
 
       it("SHOULD revert if invoked by wallet who is not round operator", async () => {
         await expect(
-          directAllocationStrategyProxy
+          directStrategyProxy
             .connect(notRoundOperator)
             .updateRoundFeeAddress(newRoundFeeAddress)
         ).to.revertedWith(
@@ -228,7 +233,7 @@ describe("DirectStrategy", () => {
         expect(await mockRound.roundEndTime()).to.be.lt(now)
 
         await expect(
-          directAllocationStrategyProxy
+          directStrategyProxy
             .updateRoundFeeAddress(newRoundFeeAddress)
         ).to.revertedWith(
           'round has ended'
@@ -236,83 +241,109 @@ describe("DirectStrategy", () => {
       });
 
       it("SHOULD update roundFeeAddress IF called is round operator", async () => {
-        const txn = await directAllocationStrategyProxy.updateRoundFeeAddress(
+        const txn = await directStrategyProxy.updateRoundFeeAddress(
           newRoundFeeAddress
         );
         await txn.wait();
 
-        const roundFeeAddress = await directAllocationStrategyProxy.roundFeeAddress();
+        const roundFeeAddress = await directStrategyProxy.roundFeeAddress();
         expect(roundFeeAddress).equals(newRoundFeeAddress);
       });
 
       it("SHOULD emit RoundFeeAddressUpdated event", async () => {
-        const txn = await directAllocationStrategyProxy.updateRoundFeeAddress(
+        const txn = await directStrategyProxy.updateRoundFeeAddress(
           newRoundFeeAddress
         );
 
         expect(txn)
-          .to.emit(directAllocationStrategyProxy, "RoundFeeAddressUpdated")
+          .to.emit(directStrategyProxy, "RoundFeeAddressUpdated")
           .withArgs(newRoundFeeAddress);
       });
     });
 
     describe("test: vote", () => {
-      let encodedVotes: BytesLike[] = [];
-      const grantee1Index = 0;
-      const grantee1GrantAmount = 10;
-
-      before(async () => {
+      it("SHOULD revert since is not an implemented functionality", async () => {
+        let encodedVotes: BytesLike[] = [];
         encodedVotes.push(
           ethers.utils.defaultAbiCoder.encode(
             ["address", "uint256", "address", "bytes32", "uint256"],
             [
               mockERC20.address,
-              grantee1GrantAmount,
+              10,
               grantee1.address,
               formatBytes32String("grantee1"),
-              grantee1Index,
+              0,
             ]
           )
         );
+        await expect(mockRound.vote(encodedVotes)).to.revertedWith("DirectStrategy__vote_NotImplemented()")
+      })
+    })
 
+    describe("test: payout", () => {
+      const grantee1ProjectId = formatBytes32String("grantee1");
+      const grantee1Index = 0;
+      const grantee1GrantAmount = 10;
+      let payment: Payment;
+
+      before(async () => {
         await mockERC20.transfer(vaultAddress, 1000);
-        await mockERC20.connect(vault).approve(directAllocationStrategyProxy.address, ethers.constants.MaxUint256);
+        await mockERC20.connect(vault).approve(directStrategyProxy.address, ethers.constants.MaxUint256);
       });
 
-      it("SHOULD revert when caller is not the round contract", async () => {
-        await expect(directAllocationStrategyProxy.vote(encodedVotes, admin.address)).to.revertedWith("error: can be invoked only by round contract")
-      })
+      describe("using transferFrom", () => {
+        before(async () => {
+          payment = {
+            vault: vaultAddress,
+            token: mockERC20.address,
+            amount: grantee1GrantAmount,
+            grantAddress: grantee1.address,
+            projectId: grantee1ProjectId,
+            applicationIndex: grantee1Index
+          }
+        });
 
-      it("SHOULD revert when caller is not the round operator", async () => {
-        await expect(mockRound.connect(notRoundOperator).vote(encodedVotes)).to.revertedWith("not round operator")
-      })
+        it("SHOULD revert when caller is not the round operator", async () => {
+          await expect(directStrategyProxy.connect(notRoundOperator).payout(payment)).to.revertedWith("not round operator")
+        })
 
-      it("SHOULD revert if application is not APPROVED", async () => {
-        expect(await mockRound.getApplicationStatus(grantee1Index)).to.eq(ApplicationStatus.PENDING)
-        await expect(mockRound.vote(encodedVotes)).to.revertedWith("application not accepted")
-      })
+        it("SHOULD revert if application is not APPROVED", async () => {
+          expect(await mockRound.getApplicationStatus(grantee1Index)).to.eq(ApplicationStatus.PENDING)
+          await expect(directStrategyProxy.payout(payment)).to.revertedWith("DirectStrategy__payout_ApplicationNotAccepted()")
+        })
 
-      it("SHOULD transfer indicated amount of ERC20 tokens from vault to grantee when application is APPROVED", async () => {
-        expect(await mockRound.getApplicationStatus(grantee1Index)).to.eq(ApplicationStatus.PENDING)
-        await mockRound.mockStatus(grantee1Index, ApplicationStatus.ACCEPTED);
-        expect(await mockRound.getApplicationStatus(grantee1Index)).to.eq(ApplicationStatus.ACCEPTED)
+        it("SHOULD revert if token is native token", async () => {
+          await mockRound.mockStatus(grantee1Index, ApplicationStatus.ACCEPTED);
+          expect(await mockRound.getApplicationStatus(grantee1Index)).to.eq(ApplicationStatus.ACCEPTED)
 
-        const balanceGrantee1Before = await mockERC20.balanceOf(grantee1.address);
-        const balanceVaultBefore = await mockERC20.balanceOf(vaultAddress);
+          await expect(directStrategyProxy.payout({
+            ...payment,
+            token: ethers.constants.AddressZero
+          })).to.revertedWith("DirectStrategy__payout_NativeTokenNotAllowed()")
+        })
 
-        await mockRound.vote(encodedVotes)
+        it("SHOULD transfer indicated amount of ERC20 tokens from vault to grantee when application is APPROVED", async () => {
+          expect(await mockRound.getApplicationStatus(grantee1Index)).to.eq(ApplicationStatus.PENDING)
+          await mockRound.mockStatus(grantee1Index, ApplicationStatus.ACCEPTED);
+          expect(await mockRound.getApplicationStatus(grantee1Index)).to.eq(ApplicationStatus.ACCEPTED)
 
-        expect(await mockERC20.balanceOf(grantee1.address)).to.eq(balanceGrantee1Before.add(grantee1GrantAmount))
-        expect(await mockERC20.balanceOf(vaultAddress)).to.eq(balanceVaultBefore.sub(grantee1GrantAmount))
-      })
+          const balanceGrantee1Before = await mockERC20.balanceOf(grantee1.address);
+          const balanceVaultBefore = await mockERC20.balanceOf(vaultAddress);
 
-      it("SHOULD transfer indicated amount of ERC20 tokens from SAFE vault to grantee when application is APPROVED");
+          await directStrategyProxy.payout(payment)
 
-      it("SHOULD emit an event for each payment");
+          expect(await mockERC20.balanceOf(grantee1.address)).to.eq(balanceGrantee1Before.add(grantee1GrantAmount))
+          expect(await mockERC20.balanceOf(vaultAddress)).to.eq(balanceVaultBefore.sub(grantee1GrantAmount))
+        })
 
-      it("?? SHOULD transfer indicated amount of ETH from vault to grantee when application is APPROVED")
+        it("SHOULD transfer indicated amount of ERC20 tokens from SAFE vault to grantee when application is APPROVED");
 
-      it("?? SHOULD transfer indicated amount of ETH from SAFE vault to grantee when application is APPROVED")
+        it("SHOULD emit an event for each payment");
+
+        it("?? SHOULD transfer indicated amount of ETH from vault to grantee when application is APPROVED")
+
+        it("?? SHOULD transfer indicated amount of ETH from SAFE vault to grantee when application is APPROVED")
+      });
     });
   });
 });

@@ -60,6 +60,22 @@ Invoked by RoundImplementation on creation to set the round for which the voting
 |---|---|---|
 | _encodedParams | bytes | undefined |
 
+### payout
+
+```solidity
+function payout(DirectStrategy.Payment payment) external nonpayable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| payment | DirectStrategy.Payment | undefined |
+
 ### roundAddress
 
 ```solidity
@@ -214,6 +230,27 @@ event Initialized(uint8 version)
 |---|---|---|
 | version  | uint8 | undefined |
 
+### PayoutMade
+
+```solidity
+event PayoutMade(address indexed vault, address token, uint256 amount, address grantAddress, bytes32 indexed projectId, uint256 indexed applicationIndex)
+```
+
+Emitted when a payout is executed
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| vault `indexed` | address | undefined |
+| token  | address | undefined |
+| amount  | uint256 | undefined |
+| grantAddress  | address | undefined |
+| projectId `indexed` | bytes32 | undefined |
+| applicationIndex `indexed` | uint256 | undefined |
+
 ### RoundFeeAddressUpdated
 
 ```solidity
@@ -267,6 +304,53 @@ Emitted when a new vote is sent
 | projectId `indexed` | bytes32 | undefined |
 | applicationIndex  | uint256 | undefined |
 | roundAddress `indexed` | address | undefined |
+
+
+
+## Errors
+
+### DirectStrategy__payout_ApplicationNotAccepted
+
+```solidity
+error DirectStrategy__payout_ApplicationNotAccepted()
+```
+
+
+
+
+
+
+### DirectStrategy__payout_NativeTokenNotAllowed
+
+```solidity
+error DirectStrategy__payout_NativeTokenNotAllowed()
+```
+
+
+
+
+
+
+### DirectStrategy__payout_NotImplementedYet
+
+```solidity
+error DirectStrategy__payout_NotImplementedYet()
+```
+
+
+
+
+
+
+### DirectStrategy__vote_NotImplemented
+
+```solidity
+error DirectStrategy__vote_NotImplemented()
+```
+
+
+
+
 
 
 
