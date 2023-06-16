@@ -133,6 +133,12 @@ const config: HardhatUserConfig = {
       "https://rpc.testnet.fantom.network/"
     ),
     localhost: createTestnetConfig("localhost", "http://localhost:8545"),
+    hardhat: {
+      forking: {
+        url: "https://eth-goerli.g.alchemy.com/v2/0CLBeB6Xf6ODDkxEk07le3AnjhKjHMVK",
+        blockNumber: 9188740 // A recent block where both AllowanceModule an Safe factory exist
+      }
+    }
   },
   gasReporter: {
     coinmarketcap: process.env.COINMARKETCAP_API_KEY,

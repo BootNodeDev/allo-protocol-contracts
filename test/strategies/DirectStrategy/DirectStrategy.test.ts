@@ -9,8 +9,12 @@ import {
   DirectStrategy,
   AlloSettings,
   MockRoundImplementation,
-  MockERC20
+  MockERC20,
+  GnosisSafeProxyFactory,
+  GnosisSafe
 } from "../../../typechain";
+
+import {signHash, executeTx} from "../../utils/safeUtils"
 
 type Payment = {
   vault: string;
@@ -19,12 +23,15 @@ type Payment = {
   grantAddress: string;
   projectId: BytesLike;
   applicationIndex: BigNumberish;
+  allowanceModule: string;
+  allowanceSignature: BytesLike;
 }
 
 describe.only("DirectStrategy", () => {
   let snapshot: number;
   let admin: SignerWithAddress;
   let notRoundOperator: SignerWithAddress;
+  let safeOwner: SignerWithAddress;
   let vault: SignerWithAddress;
   let grantee1: SignerWithAddress;
 
@@ -40,10 +47,13 @@ describe.only("DirectStrategy", () => {
 
   let strategyEncodedParams: string;
 
+  let safeVault: GnosisSafe;
+  let safeFactory: GnosisSafeProxyFactory;
+
   const VERSION = "0.2.0";
 
   before(async () => {
-    [admin, notRoundOperator, vault, grantee1] = await ethers.getSigners();
+    [admin, safeOwner, notRoundOperator, vault, grantee1] = await ethers.getSigners();
 
     // Deploy DirectStrategy contract
     let directAllocationStrategyFactory = await ethers.getContractFactory('DirectStrategy');
@@ -63,6 +73,35 @@ describe.only("DirectStrategy", () => {
 
     mockRound = await (await ethers.getContractFactory('MockRoundImplementation')).deploy() as MockRoundImplementation;
     mockERC20 = await (await ethers.getContractFactory('MockERC20')).deploy(1000000);
+
+    safeFactory = await ethers.getContractAt("GnosisSafeProxyFactory", "0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2") as GnosisSafeProxyFactory;
+    const txn = await safeFactory.createProxyWithNonce("0xd9Db270c1B5E3Bd161E8c8503c55cEABeE709552", "0x", 0)
+    const receipt = await txn.wait();
+    if (receipt.events) {
+      const event = receipt.events.find(e => e.event === 'ProxyCreation');
+      if (event && event.args) {
+        safeVault = await ethers.getContractAt("GnosisSafe", event.args.proxy) as GnosisSafe;
+      }
+    }
+    await safeVault.setup([safeOwner.address], 1, ethers.constants.AddressZero, "0x", "0xf48f2B2d2a534e402487b3ee7C18c33Aec0Fe5e4", ethers.constants.AddressZero, 0, ethers.constants.AddressZero);
+    let enableModuleData = safeVault.interface.encodeFunctionData("enableModule", ["0xCFbFaC74C26F8647cBDb8c5caf80BB5b32E43134"]);
+    let nonce = await safeVault.nonce();
+    let transactionHash = await safeVault.getTransactionHash(safeVault.address, 0, enableModuleData, 0, 0, 0, 0, ethers.constants.AddressZero, ethers.constants.AddressZero, nonce);
+
+    let sig = await signHash(safeOwner, transactionHash)
+    await executeTx(safeVault, {
+      to: safeVault.address,
+      value: 0,
+      data: enableModuleData,
+      operation: 0,
+      safeTxGas: 0,
+      baseGas: 0,
+      gasPrice: 0,
+      gasToken: ethers.constants.AddressZero,
+      refundReceiver: ethers.constants.AddressZero,
+      nonce
+
+    }, [sig])
   })
 
   beforeEach(async () => {
@@ -276,7 +315,7 @@ describe.only("DirectStrategy", () => {
             ]
           )
         );
-        await expect(mockRound.vote(encodedVotes)).to.revertedWith("DirectStrategy__vote_NotImplemented()")
+        await expect(mockRound.vote(encodedVotes)).to.revertedWith("DirectStrategy__vote_NotImplemented")
       })
     })
 
@@ -299,7 +338,9 @@ describe.only("DirectStrategy", () => {
             amount: grantee1GrantAmount,
             grantAddress: grantee1.address,
             projectId: grantee1ProjectId,
-            applicationIndex: grantee1Index
+            applicationIndex: grantee1Index,
+            allowanceModule: ethers.constants.AddressZero,
+            allowanceSignature: "0x"
           }
         });
 
@@ -309,7 +350,7 @@ describe.only("DirectStrategy", () => {
 
         it("SHOULD revert if application is not APPROVED", async () => {
           expect(await mockRound.getApplicationStatus(grantee1Index)).to.eq(ApplicationStatus.PENDING)
-          await expect(directStrategyProxy.payout(payment)).to.revertedWith("DirectStrategy__payout_ApplicationNotAccepted()")
+          await expect(directStrategyProxy.payout(payment)).to.revertedWith("DirectStrategy__payout_ApplicationNotAccepted")
         })
 
         it("SHOULD revert if token is native token", async () => {
@@ -319,7 +360,7 @@ describe.only("DirectStrategy", () => {
           await expect(directStrategyProxy.payout({
             ...payment,
             token: ethers.constants.AddressZero
-          })).to.revertedWith("DirectStrategy__payout_NativeTokenNotAllowed()")
+          })).to.revertedWith("DirectStrategy__payout_NativeTokenNotAllowed")
         })
 
         it("SHOULD transfer indicated amount of ERC20 tokens from vault to grantee when application is APPROVED", async () => {

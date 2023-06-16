@@ -199,16 +199,16 @@ Returns the version of the contract
 function vote(bytes[] encodedAllocations, address allocatorAddress) external payable
 ```
 
-Invoked by RoundImplementation which allows directly allocate funds for a project application
 
-*- TODO - can be invoked by the round - supports ERC20 and Native token transfer*
+
+
 
 #### Parameters
 
 | Name | Type | Description |
 |---|---|---|
-| encodedAllocations | bytes[] | encoded list of votes |
-| allocatorAddress | address | voter address |
+| encodedAllocations | bytes[] | undefined |
+| allocatorAddress | address | undefined |
 
 
 
@@ -233,7 +233,7 @@ event Initialized(uint8 version)
 ### PayoutMade
 
 ```solidity
-event PayoutMade(address indexed vault, address token, uint256 amount, address grantAddress, bytes32 indexed projectId, uint256 indexed applicationIndex)
+event PayoutMade(address indexed vault, address token, uint256 amount, address grantAddress, bytes32 indexed projectId, uint256 indexed applicationIndex, address allowanceModule)
 ```
 
 Emitted when a payout is executed
@@ -250,6 +250,7 @@ Emitted when a payout is executed
 | grantAddress  | address | undefined |
 | projectId `indexed` | bytes32 | undefined |
 | applicationIndex `indexed` | uint256 | undefined |
+| allowanceModule  | address | undefined |
 
 ### RoundFeeAddressUpdated
 

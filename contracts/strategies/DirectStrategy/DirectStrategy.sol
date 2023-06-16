@@ -9,6 +9,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeab
 import {BaseStrategy} from "../BaseStrategy.sol";
 import {AlloSettings} from "../../settings/AlloSettings.sol";
 import {RoundImplementation} from "../../round/RoundImplementation.sol";
+import {IAllowanceModule} from "./IAllowanceModule.sol";
 
 /**
  * Allows voters to cast multiple weighted votes to grants with one transaction
@@ -34,10 +35,12 @@ contract DirectStrategy is BaseStrategy, ReentrancyGuardUpgradeable {
   struct Payment {
       address vault;
       address token;
-      uint256 amount;
+      uint96 amount;
       address grantAddress;
       bytes32 projectId;
       uint256 applicationIndex;
+      address allowanceModule;
+      bytes allowanceSignature;
   }
 
   // --- Data ---
@@ -76,7 +79,8 @@ contract DirectStrategy is BaseStrategy, ReentrancyGuardUpgradeable {
       uint256 amount,
       address grantAddress,
       bytes32 indexed projectId,
-      uint256 indexed applicationIndex
+      uint256 indexed applicationIndex,
+      address allowanceModule
   );
 
   // --- Modifier ---
@@ -151,16 +155,14 @@ contract DirectStrategy is BaseStrategy, ReentrancyGuardUpgradeable {
    * @notice Invoked by a round operator to make direct payments of funds to a project application.
    *
    * @dev It can be used to pay from a given address using `ERC20.transferFrom`, or from
-   * the configured vault in which case this contract should be set as a Safe Module on the Safe Multisig vault.
+   * the configured vault in which case the AllowanceModule should be set as a Safe Module on the Safe Multisig vault,
+   * and the caller as delegate on the AllowanceModule.
    * Using `transferFrom` only allow to pay with ERC20 tokens, and requires the indicated vault previously approved this
    * contract to use such ERC20 token on it behalf.
    * This 2 options are handled by the `payment.vault` parameter, if it set to an address different from address(0) then
    * the function will follow the `transferFrom` path.
    *
    * To complete the payment it is required for the project application to be on status ACCEPTED.
-   *
-   * - TODO
-   * - use a Safe multisig to pull the funds from (ERC20 and ETH)
    *
    * @param payment payment data
    */
@@ -179,15 +181,24 @@ contract DirectStrategy is BaseStrategy, ReentrancyGuardUpgradeable {
         payment.grantAddress,
         payment.amount
       );
-
-      emit PayoutMade(payment.vault, payment.token, payment.amount, payment.grantAddress, payment.projectId, payment.applicationIndex);
     } else { // use Safe multisig vault
-      revert DirectStrategy__payout_NotImplementedYet();
+      IAllowanceModule allowanceModule = IAllowanceModule(payment.allowanceModule);
+      allowanceModule.executeAllowanceTransfer(
+          vaultAddress,
+          payment.token,
+          payable(payment.grantAddress),
+          uint96(payment.amount),
+          address(0),
+          0,
+          msg.sender,
+          payment.allowanceSignature
+      );
     }
+
+    emit PayoutMade(payment.vault, payment.token, payment.amount, payment.grantAddress, payment.projectId, payment.applicationIndex, payment.allowanceModule);
   }
 
   function _version() internal virtual override pure returns (string memory) {
       return VERSION;
   }
-
 }
