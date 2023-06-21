@@ -19,6 +19,9 @@ interface IAllowanceModule {
       uint16 nonce;
   }
 
+  function setAllowance(address delegate, address token, uint96 allowanceAmount, uint16 resetTimeMin, uint32 resetBaseMin) external;
+  function addDelegate(address delegate) external;
+
   function executeAllowanceTransfer(
         address safe,
         address token,

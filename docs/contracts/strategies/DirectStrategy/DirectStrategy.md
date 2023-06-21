@@ -44,6 +44,32 @@ Allo Config Contract Address
 |---|---|---|
 | _0 | contract AlloSettings | undefined |
 
+### generateTransferHash
+
+```solidity
+function generateTransferHash(address _allowanceModule, address _roundOperator, address _token, address _to, uint96 _amount) external view returns (bytes32)
+```
+
+
+
+*Generates the transfer hash that should be signed by the delegate to authorize a transfer*
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _allowanceModule | address | undefined |
+| _roundOperator | address | undefined |
+| _token | address | undefined |
+| _to | address | undefined |
+| _amount | uint96 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bytes32 | undefined |
+
 ### initialize
 
 ```solidity
@@ -63,7 +89,7 @@ Invoked by RoundImplementation on creation to set the round for which the voting
 ### payout
 
 ```solidity
-function payout(DirectStrategy.Payment payment) external nonpayable
+function payout(DirectStrategy.Payment _payment) external nonpayable
 ```
 
 
@@ -74,7 +100,7 @@ function payout(DirectStrategy.Payment payment) external nonpayable
 
 | Name | Type | Description |
 |---|---|---|
-| payment | DirectStrategy.Payment | undefined |
+| _payment | DirectStrategy.Payment | undefined |
 
 ### roundAddress
 
@@ -130,7 +156,7 @@ Round fee percentage
 ### updateRoundFeeAddress
 
 ```solidity
-function updateRoundFeeAddress(address payable newFeeAddress) external nonpayable
+function updateRoundFeeAddress(address payable _newFeeAddress) external nonpayable
 ```
 
 
@@ -141,12 +167,12 @@ function updateRoundFeeAddress(address payable newFeeAddress) external nonpayabl
 
 | Name | Type | Description |
 |---|---|---|
-| newFeeAddress | address payable | new fee address |
+| _newFeeAddress | address payable | new fee address |
 
 ### updateRoundFeePercentage
 
 ```solidity
-function updateRoundFeePercentage(uint32 newFeePercentage) external nonpayable
+function updateRoundFeePercentage(uint32 _newFeePercentage) external nonpayable
 ```
 
 
@@ -157,7 +183,7 @@ function updateRoundFeePercentage(uint32 newFeePercentage) external nonpayable
 
 | Name | Type | Description |
 |---|---|---|
-| newFeePercentage | uint32 | new fee percentage |
+| _newFeePercentage | uint32 | new fee percentage |
 
 ### vaultAddress
 
@@ -196,7 +222,7 @@ Returns the version of the contract
 ### vote
 
 ```solidity
-function vote(bytes[] encodedAllocations, address allocatorAddress) external payable
+function vote(bytes[], address) external payable
 ```
 
 
@@ -207,8 +233,8 @@ function vote(bytes[] encodedAllocations, address allocatorAddress) external pay
 
 | Name | Type | Description |
 |---|---|---|
-| encodedAllocations | bytes[] | undefined |
-| allocatorAddress | address | undefined |
+| _0 | bytes[] | undefined |
+| _1 | address | undefined |
 
 
 

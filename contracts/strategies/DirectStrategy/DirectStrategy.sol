@@ -93,9 +93,9 @@ contract DirectStrategy is BaseStrategy, ReentrancyGuardUpgradeable {
   }
 
   /// @notice modifier to check if some address is round operator.
-  modifier isCallerRoundOperator(address caller) {
+  modifier isCallerRoundOperator(address _caller) {
     require(
-      RoundImplementation(roundAddress).isRoundOperator(caller),
+      RoundImplementation(roundAddress).isRoundOperator(_caller),
       "not round operator"
     );
     _;
@@ -134,20 +134,20 @@ contract DirectStrategy is BaseStrategy, ReentrancyGuardUpgradeable {
   }
 
   // @notice Update round fee percentage (only by ROUND_OPERATOR_ROLE)
-  /// @param newFeePercentage new fee percentage
-  function updateRoundFeePercentage(uint32 newFeePercentage) external isCallerRoundOperator(msg.sender) roundHasNotEnded {
-    roundFeePercentage = newFeePercentage;
+  /// @param _newFeePercentage new fee percentage
+  function updateRoundFeePercentage(uint32 _newFeePercentage) external isCallerRoundOperator(msg.sender) roundHasNotEnded {
+    roundFeePercentage = _newFeePercentage;
     emit RoundFeePercentageUpdated(roundFeePercentage);
   }
 
   // @notice Update round fee address (only by ROUND_OPERATOR_ROLE)
-  /// @param newFeeAddress new fee address
-  function updateRoundFeeAddress(address payable newFeeAddress) external isCallerRoundOperator(msg.sender) roundHasNotEnded {
-    roundFeeAddress = newFeeAddress;
+  /// @param _newFeeAddress new fee address
+  function updateRoundFeeAddress(address payable _newFeeAddress) external isCallerRoundOperator(msg.sender) roundHasNotEnded {
+    roundFeeAddress = _newFeeAddress;
     emit RoundFeeAddressUpdated(roundFeeAddress);
   }
 
-  function vote(bytes[] calldata encodedAllocations, address allocatorAddress) external override payable {
+  function vote(bytes[] calldata, address) external override payable {
     revert DirectStrategy__vote_NotImplemented();
   }
 
@@ -164,38 +164,63 @@ contract DirectStrategy is BaseStrategy, ReentrancyGuardUpgradeable {
    *
    * To complete the payment it is required for the project application to be on status ACCEPTED.
    *
-   * @param payment payment data
+   * @param _payment payment data
    */
-  function payout(Payment calldata payment) external nonReentrant isRoundOperator {
-    uint256 currentStatus = RoundImplementation(roundAddress).getApplicationStatus(payment.applicationIndex);
+  function payout(Payment calldata _payment) external nonReentrant isRoundOperator {
+    uint256 currentStatus = RoundImplementation(roundAddress).getApplicationStatus(_payment.applicationIndex);
     if (currentStatus != uint256(ApplicationStatus.ACCEPTED)) revert DirectStrategy__payout_ApplicationNotAccepted();
 
+    address usedVault = vaultAddress;
+
     // use transfer from
-    if (payment.vault != address(0)) {
-      if (payment.token == address(0)) revert DirectStrategy__payout_NativeTokenNotAllowed();
+    if (_payment.vault != address(0)) {
+      if (_payment.token == address(0)) revert DirectStrategy__payout_NativeTokenNotAllowed();
       /// @dev erc20 transfer to grant address
       // slither-disable-next-line arbitrary-send-erc20,reentrancy-events,
       SafeERC20Upgradeable.safeTransferFrom(
-        IERC20Upgradeable(payment.token),
-        payment.vault,
-        payment.grantAddress,
-        payment.amount
+        IERC20Upgradeable(_payment.token),
+        _payment.vault,
+        _payment.grantAddress,
+        _payment.amount
       );
+      usedVault = _payment.vault;
     } else { // use Safe multisig vault
-      IAllowanceModule allowanceModule = IAllowanceModule(payment.allowanceModule);
+      IAllowanceModule allowanceModule = IAllowanceModule(_payment.allowanceModule);
       allowanceModule.executeAllowanceTransfer(
           vaultAddress,
-          payment.token,
-          payable(payment.grantAddress),
-          uint96(payment.amount),
+          _payment.token,
+          payable(_payment.grantAddress),
+          uint96(_payment.amount),
           address(0),
           0,
           msg.sender,
-          payment.allowanceSignature
+          _payment.allowanceSignature
       );
     }
 
-    emit PayoutMade(payment.vault, payment.token, payment.amount, payment.grantAddress, payment.projectId, payment.applicationIndex, payment.allowanceModule);
+    emit PayoutMade(usedVault, _payment.token, _payment.amount, _payment.grantAddress, _payment.projectId, _payment.applicationIndex, _payment.allowanceModule);
+  }
+
+  /// @dev Generates the transfer hash that should be signed by the delegate to authorize a transfer
+  function generateTransferHash(
+      address _allowanceModule,
+      address _roundOperator,
+      address _token,
+      address _to,
+      uint96 _amount
+  ) public view returns (bytes32) {
+      IAllowanceModule allowanceModule = IAllowanceModule(_allowanceModule);
+      uint256[5] memory tokenAllowance = allowanceModule.getTokenAllowance(vaultAddress, _roundOperator, _token);
+
+      return allowanceModule.generateTransferHash(
+        vaultAddress,
+        _token,
+        _to,
+        _amount,
+        address(0),
+        0,
+        uint16(tokenAllowance[4])
+      );
   }
 
   function _version() internal virtual override pure returns (string memory) {
