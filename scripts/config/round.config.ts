@@ -17,8 +17,8 @@ export const roundParams: DeployParams = {
   },
   "goerli": {
     roundFactoryContract: '0x7aeb4408B198F8fbEb87007B82d863416dF3C8Af',
-    roundImplementationContract: '0x37E0B50DccdCDE1bD280fd5394983744c9283a77',
-    roundContract: '0xF7b7d21257DEaC12F75D901309026913429C9bdF',
+    roundImplementationContract: '0x9F5d27CFc759a8Caa068A6A5e0B3d2CA17087034',
+    roundContract: '',
   },
   "optimism-mainnet": {
     roundFactoryContract: '0x04E753cFB8c8D1D7f776f7d7A033740961b6AEC2',

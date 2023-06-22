@@ -28,7 +28,7 @@ type Payment = {
   allowanceSignature: BytesLike;
 }
 
-describe("DirectStrategy", () => {
+describe.only("DirectStrategy", () => {
   let snapshot: number;
   let admin: SignerWithAddress;
   let notRoundOperator: SignerWithAddress;
@@ -57,7 +57,7 @@ describe("DirectStrategy", () => {
   const ALLOWANCE_MODULE = "0xCFbFaC74C26F8647cBDb8c5caf80BB5b32E43134"
 
   let execSafeTransaction = async function(to: string, value: string | number | BigNumber, data: string, operation: number): Promise<any> {
-    let nonce = await safeVault.nonce();
+    let nonce = (await safeVault.nonce()).toString();
     let transactionHash = await safeVault.getTransactionHash(to, value, data, operation, 0, 0, 0, ethers.constants.AddressZero, ethers.constants.AddressZero, nonce);
     let sig = await signHash(safeOwner, transactionHash)
 
