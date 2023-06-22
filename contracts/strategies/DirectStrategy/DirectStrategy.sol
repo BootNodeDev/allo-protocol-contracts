@@ -24,12 +24,12 @@ contract DirectStrategy is BaseStrategy, ReentrancyGuardUpgradeable {
 
   string public constant VERSION = "0.2.0";
 
-  // TODO - Add Review status
   enum ApplicationStatus {
     PENDING,
     ACCEPTED,
     REJECTED,
-    CANCELED
+    CANCELED,
+    IN_REVIEW
   }
 
   struct Payment {

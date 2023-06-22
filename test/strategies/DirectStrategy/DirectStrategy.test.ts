@@ -28,7 +28,7 @@ type Payment = {
   allowanceSignature: BytesLike;
 }
 
-describe.only("DirectStrategy", () => {
+describe("DirectStrategy", () => {
   let snapshot: number;
   let admin: SignerWithAddress;
   let notRoundOperator: SignerWithAddress;

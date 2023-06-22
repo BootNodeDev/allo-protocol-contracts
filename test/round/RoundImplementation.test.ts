@@ -81,7 +81,7 @@ describe("RoundImplementation", function () {
 
     strategyFactory = await ethers.getContractFactory("SimpleStrategy");
     strategyImplementation = <SimpleStrategy>await upgrades.deployProxy(strategyFactory, {
-      initializer: false      
+      initializer: false
     });
   });
 
@@ -124,7 +124,7 @@ describe("RoundImplementation", function () {
       strategyImplementation = <SimpleStrategy>await upgrades.deployProxy(strategyFactory,{
         initializer: false
       });
-      
+
       roundImplementation = <RoundImplementation>(
         await deployContract(user, roundImplementationArtifact, [])
       );
@@ -820,7 +820,7 @@ describe("RoundImplementation", function () {
 
       it("SHOULD set the correct application statuses", async () => {
         await ethers.provider.send("evm_mine", [_currentBlockTimestamp + 110]);
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < 5; i++) {
           await roundImplementation.applyToRound(
             ethers.utils.hexlify(ethers.utils.randomBytes(32)),
             {
@@ -835,6 +835,7 @@ describe("RoundImplementation", function () {
           { index: 1, status: ApplicationStatus.ACCEPTED },
           { index: 2, status: ApplicationStatus.REJECTED },
           { index: 3, status: ApplicationStatus.CANCELED },
+          { index: 4, status: ApplicationStatus.ADDITIONAL_1 },
         ];
 
         const newState = buildStatusRow(0n, statuses);
@@ -860,6 +861,86 @@ describe("RoundImplementation", function () {
 
         expect(await roundImplementation.getApplicationStatus(3)).equal(
           ApplicationStatus.CANCELED
+        );
+
+        expect(await roundImplementation.getApplicationStatus(4)).equal(
+          ApplicationStatus.ADDITIONAL_1
+        );
+      });
+
+      it("SHOULD set the correct application statuses on multiple rows", async () => {
+        await ethers.provider.send("evm_mine", [_currentBlockTimestamp + 110]);
+        for (let i = 0; i < 69; i++) {
+          await roundImplementation.applyToRound(
+            ethers.utils.hexlify(ethers.utils.randomBytes(32)),
+            {
+              protocol: 1,
+              pointer: "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG",
+            }
+          );
+        }
+
+        const statuses = [
+          { index: 0, status: ApplicationStatus.PENDING },
+          { index: 1, status: ApplicationStatus.ACCEPTED },
+          { index: 2, status: ApplicationStatus.REJECTED },
+          { index: 3, status: ApplicationStatus.CANCELED },
+          { index: 4, status: ApplicationStatus.ADDITIONAL_1 },
+        ];
+
+        const newState = buildStatusRow(0n, statuses);
+
+        const applicationStatus = [
+          {
+            index: 0,
+            statusRow: newState,
+          },
+          {
+            index: 1,
+            statusRow: newState,
+          }
+        ];
+
+        await roundImplementation.setApplicationStatuses(applicationStatus);
+
+        expect(await roundImplementation.getApplicationStatus(0)).equal(
+          ApplicationStatus.PENDING
+        );
+
+        expect(await roundImplementation.getApplicationStatus(1)).equal(
+          ApplicationStatus.ACCEPTED
+        );
+
+        expect(await roundImplementation.getApplicationStatus(2)).equal(
+          ApplicationStatus.REJECTED
+        );
+
+        expect(await roundImplementation.getApplicationStatus(3)).equal(
+          ApplicationStatus.CANCELED
+        );
+
+        expect(await roundImplementation.getApplicationStatus(4)).equal(
+          ApplicationStatus.ADDITIONAL_1
+        );
+
+        expect(await roundImplementation.getApplicationStatus(64)).equal(
+          ApplicationStatus.PENDING
+        );
+
+        expect(await roundImplementation.getApplicationStatus(65)).equal(
+          ApplicationStatus.ACCEPTED
+        );
+
+        expect(await roundImplementation.getApplicationStatus(66)).equal(
+          ApplicationStatus.REJECTED
+        );
+
+        expect(await roundImplementation.getApplicationStatus(67)).equal(
+          ApplicationStatus.CANCELED
+        );
+
+        expect(await roundImplementation.getApplicationStatus(68)).equal(
+          ApplicationStatus.ADDITIONAL_1
         );
       });
     });
