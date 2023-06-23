@@ -16,8 +16,6 @@ import "../payoutStrategy/IPayoutStrategyInitializable.sol";
 
 import "../utils/MetaPtr.sol";
 
-import "hardhat/console.sol";
-
 /**
  * @notice Contract deployed per Round which would managed by
  * a group of ROUND_OPERATOR via the RoundFactory
@@ -205,7 +203,6 @@ contract RoundImplementation is IRoundImplementation, AccessControlEnumerable, I
     bytes calldata encodedParameters,
     address _alloSettings
   ) external initializer {
-    console.log("initialize");
     // Decode _encodedParameters
     (
       InitAddress memory _initAddress,
@@ -265,14 +262,10 @@ contract RoundImplementation is IRoundImplementation, AccessControlEnumerable, I
     // Invoke init on voting contract
     if (address(votingStrategy) != address(0)) votingStrategy.init();
 
-    console.logBytes(_payoutEncodedParameters);
-
     // Invoke init on payout contract
     if (_payoutEncodedParameters.length > 0) {
-      console.log("ENTRA");
       IPayoutStrategyInitializable(payable(payoutStrategy)).init(_payoutEncodedParameters);
     } else {
-      console.log("NO ENTRA");
       payoutStrategy.init();
     }
 
