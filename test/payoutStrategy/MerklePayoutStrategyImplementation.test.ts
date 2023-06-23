@@ -192,6 +192,7 @@ describe("MerklePayoutStrategyImplementation", function () {
         roundFeeAddress,
         initMetaPtr,
         initRoles,
+        "0x"
       ];
 
       await roundImplementation.initialize(
@@ -372,7 +373,7 @@ describe("MerklePayoutStrategyImplementation", function () {
         ).timestamp;
 
         await initPayoutStrategy(_currentBlockTimestamp, merklePayoutStrategy);
-        
+
         await ethers.provider.send("evm_mine", [_currentBlockTimestamp + 1300]);
 
         await merklePayoutStrategy.updateDistribution(

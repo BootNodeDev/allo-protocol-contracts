@@ -12,8 +12,11 @@ import "@openzeppelin/contracts-upgradeable/utils/MulticallUpgradeable.sol";
 import "../settings/AlloSettings.sol";
 import "../votingStrategy/IVotingStrategy.sol";
 import "../payoutStrategy/IPayoutStrategy.sol";
+import "../payoutStrategy/IPayoutStrategyInitializable.sol";
 
 import "../utils/MetaPtr.sol";
+
+import "hardhat/console.sol";
 
 /**
  * @notice Contract deployed per Round which would managed by
@@ -22,7 +25,7 @@ import "../utils/MetaPtr.sol";
  */
 contract RoundImplementation is IRoundImplementation, AccessControlEnumerable, Initializable, MulticallUpgradeable {
 
-  string public constant VERSION = "1.0.0";
+  string public constant VERSION = "1.1.0";
 
   // --- Libraries ---
   using Address for address;
@@ -167,13 +170,16 @@ contract RoundImplementation is IRoundImplementation, AccessControlEnumerable, I
 
   // This is a packed array of booleans.
   // statuses[0] is the first row of the bitmap and allows to store 256 bits to describe
-  // the status of 256 projects.
+  // the status of 64 projects.
   // statuses[1] is the second row, and so on.
   // Instead of using 1 bit for each application status, we use 2 bits to allow 4 statuses:
   // 0: pending
   // 1: approved
   // 2: rejected
   // 3: canceled
+  // 4: [Additional Status]
+  // ...
+  // 15: [Additional Status]
   // Since it's a mapping the storage it's pre-allocated with zero values,
   // so if we check the status of an existing application, the value is by default 0 (pending).
   // If we want to check the status of an application, we take its index from the `applications` array
@@ -193,11 +199,13 @@ contract RoundImplementation is IRoundImplementation, AccessControlEnumerable, I
    *  - _token Address of the ERC20/native token for accepting matching pool contributions
    *  - _initMetaPtr Round metaPtrs
    *  - _initRoles Round roles
+   *  - _payoutEncodedParameters Optional bytes encoded parameters to be used for initializing the Payout Strategy
    */
   function initialize(
     bytes calldata encodedParameters,
     address _alloSettings
   ) external initializer {
+    console.log("initialize");
     // Decode _encodedParameters
     (
       InitAddress memory _initAddress,
@@ -207,7 +215,8 @@ contract RoundImplementation is IRoundImplementation, AccessControlEnumerable, I
       uint32 _roundFeePercentage,
       address payable _roundFeeAddress,
       InitMetaPtr memory _initMetaPtr,
-      InitRoles memory _initRoles
+      InitRoles memory _initRoles,
+      bytes memory _payoutEncodedParameters
     ) = abi.decode(
       encodedParameters, (
       (InitAddress),
@@ -217,7 +226,8 @@ contract RoundImplementation is IRoundImplementation, AccessControlEnumerable, I
       uint32,
       address,
       (InitMetaPtr),
-      (InitRoles)
+      (InitRoles),
+      bytes
     ));
 
     // slither-disable-next-line timestamp
@@ -253,10 +263,18 @@ contract RoundImplementation is IRoundImplementation, AccessControlEnumerable, I
     token = _token;
 
     // Invoke init on voting contract
-    votingStrategy.init();
+    if (address(votingStrategy) != address(0)) votingStrategy.init();
+
+    console.logBytes(_payoutEncodedParameters);
 
     // Invoke init on payout contract
-    payoutStrategy.init();
+    if (_payoutEncodedParameters.length > 0) {
+      console.log("ENTRA");
+      IPayoutStrategyInitializable(payable(payoutStrategy)).init(_payoutEncodedParameters);
+    } else {
+      console.log("NO ENTRA");
+      payoutStrategy.init();
+    }
 
     matchAmount = _matchAmount;
     roundFeePercentage = _roundFeePercentage;
@@ -392,10 +410,13 @@ contract RoundImplementation is IRoundImplementation, AccessControlEnumerable, I
   }
 
   // Statuses:
-  // * 0 - pending
-  // * 1 - approved
-  // * 2 - rejected
-  // * 3 - canceled
+  // * 0  - pending
+  // * 1  - approved
+  // * 2  - rejected
+  // * 3  - canceled
+  // * 4  - [Additional Status]
+  // ...
+  // * 15 - [Additional Status]
   /// Set application statuses
   /// @param statuses new statuses
   function setApplicationStatuses(ApplicationStatus[] memory statuses) external roundHasNotEnded onlyRole(ROUND_OPERATOR_ROLE) {
@@ -419,11 +440,11 @@ contract RoundImplementation is IRoundImplementation, AccessControlEnumerable, I
   function getApplicationStatus(uint256 applicationIndex) external view returns(uint256) {
     require(applicationIndex < applications.length, "Round: Application does not exist");
 
-    uint256 rowIndex = applicationIndex / 128;
-    uint256 colIndex = (applicationIndex % 128) * 2;
+    uint256 rowIndex = applicationIndex / 64; // 64 = number of 4 bits words on 256 bits
+    uint256 colIndex = (applicationIndex % 64) * 4; // using 4 bits mask
 
     uint256 currentRow = applicationStatusesBitMap[rowIndex];
-    uint256 status = (currentRow >> colIndex) & 3;
+    uint256 status = (currentRow >> colIndex) & 15; // 1111 = 15
 
     return status;
   }

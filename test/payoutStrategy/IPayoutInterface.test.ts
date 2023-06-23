@@ -139,7 +139,8 @@ describe("IPayoutInterface", function () {
         roundFeePercentage,
         roundFeeAddress,
         initMetaPtr,
-        initRoles
+        initRoles,
+        "0x"
       ];
 
       await roundImplementation.initialize(
@@ -268,7 +269,7 @@ describe("IPayoutInterface", function () {
 
       it("SHOULD revert if isReadyForPayout is already true", async() => {
         await initPayoutStrategy(_currentBlockTimestamp, merklePayoutStrategy);
-        
+
         // transfer some tokens to roundImplementation
         await mockERC20.transfer(roundImplementation.address, 110);
         await ethers.provider.send("evm_mine", [_currentBlockTimestamp + 1300])
@@ -276,7 +277,7 @@ describe("IPayoutInterface", function () {
         await merklePayoutStrategy.updateDistribution(
           encodeDistributionParameters(hexlify(randomBytes(32)), 1, "test")
         );
-        
+
         // set isReadyForPayout as true
         await roundImplementation.setReadyForPayout();
 
@@ -317,7 +318,7 @@ describe("IPayoutInterface", function () {
       it("SHOULD revert WHEN invoked before endLockingTime", async() => {
         params = await initPayoutStrategy(_currentBlockTimestamp, merklePayoutStrategy);
 
-        const tx = merklePayoutStrategy.withdrawFunds(Wallet.createRandom().address);        
+        const tx = merklePayoutStrategy.withdrawFunds(Wallet.createRandom().address);
         await expect(tx).to.revertedWith('round has not ended');
       });
 
