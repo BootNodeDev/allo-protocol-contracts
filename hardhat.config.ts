@@ -134,6 +134,12 @@ const config: HardhatUserConfig = {
       "https://rpc.testnet.fantom.network/"
     ),
     localhost: createTestnetConfig("localhost", "http://localhost:8545"),
+    hardhat: {
+      forking: {
+        url: process.env.FORK_RPC_URL || "",
+        blockNumber: 9188740 // A recent block where both AllowanceModule an Safe factory exist
+      }
+    }
   },
   gasReporter: {
     coinmarketcap: process.env.COINMARKETCAP_API_KEY,
