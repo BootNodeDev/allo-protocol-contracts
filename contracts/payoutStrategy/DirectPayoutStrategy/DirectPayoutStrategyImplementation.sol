@@ -291,12 +291,4 @@ contract DirectPayoutStrategyImplementation is ReentrancyGuardUpgradeable, IPayo
       IERC20Upgradeable(_token).safeTransfer(_recipient, _amount);
     }
   }
-
-  // not implemented functions
-  function updateDistribution(bytes calldata) external override {
-    revert DirectStrategy__notImplemented();
-  }
-  function isDistributionSet() public override pure returns (bool) {
-    return true;
-  }
 }
